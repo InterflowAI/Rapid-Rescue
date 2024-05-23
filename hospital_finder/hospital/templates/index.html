@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Get Location</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        #map {
+            height: 950px;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <button onclick="getLocation()">Get Location</button>
+    <p id="location"></p>
+    <div id="map"></div>
+
+    <script>
+        function getLocation() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition((position) => {
+                    const latitude = position.coords.latitude;
+                    const longitude = position.coords.longitude;
+                    document.getElementById("location").innerText = `Latitude: ${latitude}, Longitude: ${longitude}`;
+                    // Send the location to the server
+                    $.ajax({
+                        url: 'find_hospitals/',
+                        type: 'POST',
+                        data: {
+                            'latitude': latitude,
+                            'longitude': longitude,
+                            'csrfmiddlewaretoken': '{{ csrf_token }}'
+                        },
+                        success: function(data){
+                            initMap(data.user_location, data.hospitals);
+                        },
+                        error: function(error){
+                            console.error(error);
+                            document.getElementById("location").innerText = 'Error finding hospitals.';
+                        }
+                    });
+                }, (error) => {
+                    console.error(error);
+                    document.getElementById("location").innerText = 'Error getting location.';
+                });
+            } else {
+                document.getElementById("location").innerText = 'Geolocation is not supported by this browser.';
+            }
+        }
+
+        function initMap(userLocation, hospitals) {
+            var map = L.map('map').setView(userLocation, 13);
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19,
+            }).addTo(map);
+
+            // User location marker
+            L.marker(userLocation).addTo(map)
+                .bindPopup('You are here')
+                .openPopup();
+
+            // Hospital markers
+            hospitals.forEach(function(hospital) {
+                var lat = hospital.coordinates[0];
+                var lon = hospital.coordinates[1];
+                L.marker([lat, lon]).addTo(map)
+                    .bindPopup(hospital.name);
+            });
+        }
+    </script>
+</body>
+</html>
