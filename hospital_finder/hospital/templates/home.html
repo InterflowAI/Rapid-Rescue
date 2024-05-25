@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+
+{% block title %}Home{% endblock %}
+
+{% block content %}
+<div class="home-container">
+    <button id="locate-button" class="btn">Locate Now</button>
+    <h1>Welcome to My Web App</h1>
+    <p>This is the home page. Click the button above to find your location and nearby hospitals.</p>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.getElementById('locate-button').addEventListener('click', function() {
+        window.location.href = "{% url 'index' %}";
+    });
+</script>
+{% endblock %}

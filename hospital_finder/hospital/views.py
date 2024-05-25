@@ -15,6 +15,9 @@ api_key = '5b3ce3597851110001cf624892a668326ddc448c91eb298bd7822bfc'
 ORS_API_KEY='5b3ce3597851110001cf62481b8682dc02ad4716aa824115b4ba9d33'
 client = openrouteservice.Client(key=api_key)
 
+def home(request):
+    return render(request, 'home.html')
+
 def find_nearby_hospitals(latitude, longitude):
     overpass_url = "http://overpass-api.de/api/interpreter"
     overpass_query = f"""
