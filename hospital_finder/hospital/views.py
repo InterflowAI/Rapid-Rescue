@@ -143,10 +143,11 @@ def get_route(request):
             response_data = response.json()
 
             if 'routes' in response_data:
-                route = response_data['routes'][0]['geometry']['coordinates']
+                encoded_geometry = response_data['routes'][0]['geometry']
+                decoded_geometry = polyline.decode(encoded_geometry)
                 # The coordinates from OpenRouteService are in [longitude, latitude] format
-                route = [[coord[1], coord[0]] for coord in route]  # Convert to [latitude, longitude]
-                return JsonResponse({'route': route})
+                  # Convert to [latitude, longitude]
+                return JsonResponse({'route':decoded_geometry})
             else:
                 logger.error('No routes found in response')
                 return JsonResponse({'error': 'No routes found'}, status=500)
