@@ -1,6 +1,8 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Get Location</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
@@ -13,17 +15,22 @@
     </style>
 </head>
 <body>
-    <button onclick="getLocation()">Get Location</button>
-    <p id="location"></p>
     <div id="map"></div>
 
     <script>
+        let map;
+        let userMarker;
+        let routeLayer;
+
+        document.addEventListener("DOMContentLoaded", function() {
+            getLocation();
+        });
+
         function getLocation() {
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition((position) => {
                     const latitude = position.coords.latitude;
                     const longitude = position.coords.longitude;
-                    document.getElementById("location").innerText = `Latitude: ${latitude}, Longitude: ${longitude}`;
                     // Send the location to the server
                     $.ajax({
                         url: 'find_hospitals/',
@@ -34,42 +41,116 @@
                             'csrfmiddlewaretoken': '{{ csrf_token }}'
                         },
                         success: function(data){
-                            initMap(data.user_location, data.hospitals);
+                            console.log('Hospitals data received:', data); // Log received data
+                            initMap([latitude, longitude], data.hospitals);
+                            // Show route to the nearest hospital
+                            const nearestHospital = findNearestHospital([latitude, longitude], data.hospitals);
+                            if (nearestHospital) {
+                                getRoute([latitude, longitude], nearestHospital.coordinates);
+                            }
                         },
                         error: function(error){
-                            console.error(error);
-                            document.getElementById("location").innerText = 'Error finding hospitals.';
+                            console.error('Error finding hospitals:', error);
+                            alert('Error finding hospitals.');
                         }
                     });
                 }, (error) => {
-                    console.error(error);
-                    document.getElementById("location").innerText = 'Error getting location.';
+                    console.error('Error getting location:', error);
+                    alert('Error getting location.');
                 });
             } else {
-                document.getElementById("location").innerText = 'Geolocation is not supported by this browser.';
+                alert('Geolocation is not supported by this browser.');
             }
         }
 
+        function findNearestHospital(userLocation, hospitals) {
+            let nearestHospital = null;
+            let minDistance = Infinity;
+            hospitals.forEach(function(hospital) {
+                const distance = getDistance(userLocation, hospital.coordinates);
+                if (distance < minDistance) {
+                    minDistance = distance;
+                    nearestHospital = hospital;
+                }
+            });
+            return nearestHospital;
+        }
+
+        function getDistance(loc1, loc2) {
+            const [lat1, lon1] = loc1;
+            const [lat2, lon2] = loc2;
+            const R = 6371e3; // metres
+            const φ1 = lat1 * Math.PI/180;
+            const φ2 = lat2 * Math.PI/180;
+            const Δφ = (lat2-lat1) * Math.PI/180;
+            const Δλ = (lon2-lon1) * Math.PI/180;
+            const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
+                      Math.cos(φ1) * Math.cos(φ2) *
+                      Math.sin(Δλ/2) * Math.sin(Δλ/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            return R * c; // in metres
+        }
+
         function initMap(userLocation, hospitals) {
-            var map = L.map('map').setView(userLocation, 13);
+            if (map) {
+                map.remove();
+            }
+
+            map = L.map('map').setView(userLocation, 16);
 
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 maxZoom: 19,
             }).addTo(map);
 
             // User location marker
-            L.marker(userLocation).addTo(map)
+            userMarker = L.marker(userLocation).addTo(map)
                 .bindPopup('You are here')
                 .openPopup();
 
             // Hospital markers
             hospitals.forEach(function(hospital) {
-                var lat = hospital.coordinates[0];
-                var lon = hospital.coordinates[1];
-                L.marker([lat, lon]).addTo(map)
+                const lat = hospital.coordinates[0];
+                const lon = hospital.coordinates[1];
+                const marker = L.marker([lat, lon]).addTo(map)
                     .bindPopup(hospital.name);
+                marker.on('click', function() {
+                    getRoute(userLocation, hospital.coordinates);
+                });
             });
         }
+
+        function getRoute(userLocation, hospitalLocation) {
+        if (routeLayer) {
+            map.removeLayer(routeLayer);
+        }
+
+        $.ajax({
+            url: 'get_route/',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({
+                'user_latitude': userLocation[0],
+                'user_longitude': userLocation[1],
+                'hospital_latitude': hospitalLocation[0],
+                'hospital_longitude': hospitalLocation[1],
+                'csrfmiddlewaretoken': '{{ csrf_token }}'
+            }),
+            success: function(data){
+                console.log('Route data received:', data); // Log received route data
+                if (data.route && data.route.length > 0) {
+                    routeLayer = L.polyline(data.route, {color: 'blue'}).addTo(map);
+                    map.fitBounds(routeLayer.getBounds());
+                } else {
+                    console.error('No route data found.');
+                    alert('No route data found.');
+                }
+            },
+            error: function(error){
+                console.error('Error getting route:', error);
+                alert('Error getting route.');
+            }
+        });
+    }
     </script>
 </body>
 </html>

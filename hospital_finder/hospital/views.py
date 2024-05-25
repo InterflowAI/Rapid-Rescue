@@ -1,5 +1,7 @@
 from django.shortcuts import render
 from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+import json
 from django.core.cache import cache
 from .models import Hospital
 import requests
@@ -7,8 +9,10 @@ import openrouteservice
 import folium
 import polyline
 import time
+import logging
 
 api_key = '5b3ce3597851110001cf624892a668326ddc448c91eb298bd7822bfc'
+ORS_API_KEY='5b3ce3597851110001cf62481b8682dc02ad4716aa824115b4ba9d33'
 client = openrouteservice.Client(key=api_key)
 
 def find_nearby_hospitals(latitude, longitude):
@@ -110,3 +114,49 @@ def find_hospitals(request):
         return JsonResponse(response_data)
 
     return JsonResponse({'error': 'Invalid request'}, status=400)
+logger = logging.getLogger(__name__)
+@csrf_exempt
+def get_route(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body.decode('utf-8'))
+            user_latitude = data.get('user_latitude')
+            user_longitude = data.get('user_longitude')
+            hospital_latitude = data.get('hospital_latitude')
+            hospital_longitude = data.get('hospital_longitude')
+
+            if not all([user_latitude, user_longitude, hospital_latitude, hospital_longitude]):
+                raise ValueError("Missing location data")
+
+            # Call OpenRouteService API to get the route
+            ors_url = 'https://api.openrouteservice.org/v2/directions/driving-car'
+            headers = {
+                'Authorization': ORS_API_KEY,
+                'Content-Type': 'application/json'
+            }
+            body = {
+                'coordinates': [[user_longitude, user_latitude], [hospital_longitude, hospital_latitude]],
+                'format': 'geojson'
+            }
+
+            response = requests.post(ors_url, json=body, headers=headers)
+            response_data = response.json()
+
+            if 'routes' in response_data:
+                route = response_data['routes'][0]['geometry']['coordinates']
+                # The coordinates from OpenRouteService are in [longitude, latitude] format
+                route = [[coord[1], coord[0]] for coord in route]  # Convert to [latitude, longitude]
+                return JsonResponse({'route': route})
+            else:
+                logger.error('No routes found in response')
+                return JsonResponse({'error': 'No routes found'}, status=500)
+
+        except ValueError as ve:
+            logger.error(f"ValueError in get_route: {ve}")
+            return JsonResponse({'error': str(ve)}, status=400)
+
+        except Exception as e:
+            logger.error(f"Exception in get_route: {e}")
+            return JsonResponse({'error': 'Internal server error'}, status=500)
+
+    return JsonResponse({'error': 'Invalid request method'}, status=400)
