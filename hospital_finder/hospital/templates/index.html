@@ -91,7 +91,7 @@
             return R * c; // in metres
         }
 
-        function initMap(userLocation, hospitals) {
+        function initMap(userLocation,hospitals,distance) {
             if (map) {
                 map.remove();
             }
@@ -111,8 +111,9 @@
             hospitals.forEach(function(hospital) {
                 const lat = hospital.coordinates[0];
                 const lon = hospital.coordinates[1];
+                var popup = `${hospital.name}(${hospital.distance})`;
                 const marker = L.marker([lat, lon]).addTo(map)
-                    .bindPopup(hospital.name);
+                    .bindPopup(popup);
                 marker.on('click', function() {
                     getRoute(userLocation, hospital.coordinates);
                 });

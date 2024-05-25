@@ -61,7 +61,6 @@ def find_hospitals(request):
             lat = hospital.get('lat', '')
             lon = hospital.get('lon', '')
             coordinates = (lat, lon)
-            hospitals.append({"name": name, "coordinates": coordinates})
 
             route_cache_key = f"route_{latitude}_{longitude}_{lat}_{lon}"
             cached_route = cache.get(route_cache_key)
@@ -94,6 +93,7 @@ def find_hospitals(request):
                 longitude=lon,
                 defaults={'distance': distance}
             )
+            hospitals.append({"name": name, "coordinates": coordinates,'distance':distance})
             hospitals_list.append([name, distance, routes])
 
         sorted_hospitals = sort_hospitals_by_distance(hospitals_list)
