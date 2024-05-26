@@ -23,7 +23,7 @@ def find_nearby_hospitals(latitude, longitude):
     overpass_query = f"""
     [out:json];
     (
-      node["amenity"="hospital"](around:7000,{latitude},{longitude});
+      node["amenity"="hospital"](around:3000,{latitude},{longitude});
     );
     out center;
     """
@@ -59,7 +59,7 @@ def find_hospitals(request):
         hospitals_list = []
         hospitals = []
 
-        for hospital in nearby_hospitals[:15]:
+        for hospital in nearby_hospitals[:]:
             name = hospital.get('tags', {}).get('name', 'Unknown Hospital')
             lat = hospital.get('lat', '')
             lon = hospital.get('lon', '')
