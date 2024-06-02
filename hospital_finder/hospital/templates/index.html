@@ -3,11 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Get Location</title>
+    <title>Hospital Finder</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <style>
+        h1{
+            text-align: center;
+        }
         #map {
             height: 650px;
             width: 100%;
@@ -33,7 +36,7 @@
         }
         #table-toggle {
             box-shadow: 0 0 5px rgba(0, 0, 0, 0.8); /* Change the box-shadow color to black */
-            position: absolute; /* Make the icon position absolute */
+            position: fixed; /* Make the icon position absolute */
             top: 20px; /* Position the icon 20px from the top */
             right: 20px; /* Position the icon 20px from the right */
             border: 2px solid black; /* Add a transparent border */
@@ -41,18 +44,65 @@
             padding: 5px; /* Add some padding to make the icon larger */
             cursor: pointer; /* Keep the cursor as a pointer */
             z-index: 1000; /* Ensure the icon appears on top of the map */
+            animation: wiggle 2s linear infinite;
+            
+        }
+        #home-toggle {
+            box-shadow: 0 0 5px rgba(0, 0, 0, 0.8); /* Change the box-shadow color to black */
+            position: fixed; /* Make the icon position absolute */
+            top: 20px; /* Position the icon 20px from the top */
+            right: 150px; /* Position the icon 20px from the right */
+            border: 2px solid black; /* Add a transparent border */
+            border-radius: 10px; /* Make the border round */
+            padding: 5px; /* Add some padding to make the icon larger */
+            cursor: pointer; /* Keep the cursor as a pointer */
+            z-index: 1000; /* Ensure the icon appears on top of the map */
         }
     
-        #table-toggle:hover {
+        #table-toggle:hover ,#home-toggle:hover{
             box-shadow: 0 0 5px rgba(255, 165, 0, 0.8);
             border-color: red; /* Change the border color to red on hover */
             background-color: red; /* Add a red background color on hover */
             border-radius: 10px; /* Keep the border round on hover */
+            animation:none;
         }
+        a{
+            text-decoration: none;
+            color:black;
+        }
+        
+          
+          /* Keyframes */
+          @keyframes wiggle {
+            0%, 7% {
+              transform: rotateZ(0);
+            }
+            15% {
+              transform: rotateZ(-15deg);
+            }
+            20% {
+              transform: rotateZ(10deg);
+            }
+            25% {
+              transform: rotateZ(-10deg);
+            }
+            30% {
+              transform: rotateZ(6deg);
+            }
+            35% {
+              transform: rotateZ(-4deg);
+            }
+            40%, 100% {
+              transform: rotateZ(0);
+            }
+          }
+          
+         
     </style>
 </head>
 <body>
     <i id="table-toggle" class="fas fa-table" style="cursor: pointer;">MAP-DETAILS</i>
+    <i id="home-toggle" class="fas fa-table" style="cursor: pointer;"><a href="{% url 'home' %}">Home</a></i>
     <table id="hospital-details" style="display: none;">
         <thead>
             <tr>
@@ -63,7 +113,6 @@
         <tbody></tbody>
     </table>
     <div id="map"></div>
-
     <script>
         let map;
         let userMarker;
@@ -231,5 +280,6 @@
             });
         }
     </script>
+    
 </body>
 </html>

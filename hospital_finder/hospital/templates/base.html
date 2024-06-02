@@ -9,15 +9,6 @@
     {% block extra_css %}{% endblock %}
 </head>
 <body>
-    <header>
-        <nav>
-            <ul>
-                <li><a href="{% url 'home' %}">Home</a></li>
-                <li><a href="{% url 'index' %}">Locate Now</a></li>
-                
-            </ul>
-        </nav>
-    </header>
     <main>
         {% block content %}{% endblock %}
     </main>
