@@ -9,22 +9,78 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <style>
         #map {
-            height: 950px;
+            height: 650px;
             width: 100%;
+        }
+        #hospital-details {
+            position: absolute;
+            top: 50px;
+            right: 20px;
+            z-index: 1000; /* Ensure the table appears on top of the map */
+            width: 300px; /* Adjust the width to your liking */
+            background-color: #fff; /* Add a background color to make the table visible */
+            border: 1px solid #ddd;
+            padding: 10px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+        }
+        #hospital-details th, #hospital-details td {
+            border: 1px solid #ddd;
+            padding: 8px;
+        }
+        #hospital-details th {
+            background-color: #f2f2f2;
+        }
+        #table-toggle {
+            box-shadow: 0 0 5px rgba(0, 0, 0, 0.8); /* Change the box-shadow color to black */
+            position: absolute; /* Make the icon position absolute */
+            top: 20px; /* Position the icon 20px from the top */
+            right: 20px; /* Position the icon 20px from the right */
+            border: 2px solid black; /* Add a transparent border */
+            border-radius: 10px; /* Make the border round */
+            padding: 5px; /* Add some padding to make the icon larger */
+            cursor: pointer; /* Keep the cursor as a pointer */
+            z-index: 1000; /* Ensure the icon appears on top of the map */
+        }
+    
+        #table-toggle:hover {
+            box-shadow: 0 0 5px rgba(255, 165, 0, 0.8);
+            border-color: red; /* Change the border color to red on hover */
+            background-color: red; /* Add a red background color on hover */
+            border-radius: 10px; /* Keep the border round on hover */
         }
     </style>
 </head>
 <body>
+    <i id="table-toggle" class="fas fa-table" style="cursor: pointer;">MAP-DETAILS</i>
+    <table id="hospital-details" style="display: none;">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Distance (KM)</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
     <div id="map"></div>
 
     <script>
         let map;
         let userMarker;
         let routeLayer;
-
+        document.addEventListener("DOMContentLoaded", function() {
+            const tableToggle = document.getElementById('table-toggle');
+            const hospitalTable = document.getElementById('hospital-details');
+    
+            tableToggle.addEventListener('click', function() {
+                hospitalTable.style.display = hospitalTable.style.display === 'none'? 'block' : 'none';
+            });
+        });
+       
         document.addEventListener("DOMContentLoaded", function() {
             getLocation();
         });
+        
 
         function getLocation() {
             if (navigator.geolocation) {
@@ -43,6 +99,7 @@
                         success: function(data){
                             console.log('Hospitals data received:', data); // Log received data
                             initMap([latitude, longitude], data.hospitals);
+                            populateHospitalTable(data.hospitals);
                             // Show route to the nearest hospital
                             const nearestHospital = findNearestHospital([latitude, longitude], data.hospitals);
                             if (nearestHospital) {
@@ -91,7 +148,7 @@
             return R * c; // in metres
         }
 
-        function initMap(userLocation,hospitals,distance) {
+        function initMap(userLocation, hospitals) {
             if (map) {
                 map.remove();
             }
@@ -111,7 +168,7 @@
             hospitals.forEach(function(hospital) {
                 const lat = hospital.coordinates[0];
                 const lon = hospital.coordinates[1];
-                var popup = `${hospital.name} (${hospital.distance} KM)`;
+                const popup = `${hospital.name} (${hospital.distance} KM)`;
                 const marker = L.marker([lat, lon]).addTo(map);
                 marker.on('mouseover', function() {
                     marker.bindPopup(popup).openPopup();
@@ -125,38 +182,54 @@
             });
         }
 
-        function getRoute(userLocation, hospitalLocation) {
-        if (routeLayer) {
-            map.removeLayer(routeLayer);
+        function populateHospitalTable(hospitals) {
+            const tbody = document.querySelector('#hospital-details tbody');
+            tbody.innerHTML = ''; // Clear any existing rows
+            hospitals.sort((a, b) => a.distance - b.distance);
+            hospitals.forEach(function(hospital) {
+                const row = document.createElement('tr');
+                const nameCell = document.createElement('td');
+                nameCell.textContent = hospital.name;
+                const distanceCell = document.createElement('td');
+                distanceCell.textContent = hospital.distance+'Km';// Convert meters to kilometers
+                row.appendChild(nameCell);
+                row.appendChild(distanceCell);
+                tbody.appendChild(row);
+            });
         }
 
-        $.ajax({
-            url: 'get_route/',
-            type: 'POST',
-            contentType: 'application/json',
-            data: JSON.stringify({
-                'user_latitude': userLocation[0],
-                'user_longitude': userLocation[1],
-                'hospital_latitude': hospitalLocation[0],
-                'hospital_longitude': hospitalLocation[1],
-                'csrfmiddlewaretoken': '{{ csrf_token }}'
-            }),
-            success: function(data){
-                console.log('Route data received:', data); // Log received route data
-                if (data.route && data.route.length > 0) {
-                    routeLayer = L.polyline(data.route, {color: 'blue'}).addTo(map);
-                    map.fitBounds(routeLayer.getBounds());
-                } else {
-                    console.error('No route data found.');
-                    alert('No route data found.');
-                }
-            },
-            error: function(error){
-                console.error('Error getting route:', error);
-                alert('Error getting route.');
+        function getRoute(userLocation, hospitalLocation) {
+            if (routeLayer) {
+                map.removeLayer(routeLayer);
             }
-        });
-    }
+
+            $.ajax({
+                url: 'get_route/',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    'user_latitude': userLocation[0],
+                    'user_longitude': userLocation[1],
+                    'hospital_latitude': hospitalLocation[0],
+                    'hospital_longitude': hospitalLocation[1],
+                    'csrfmiddlewaretoken': '{{ csrf_token }}'
+                }),
+                success: function(data){
+                    console.log('Route data received:', data); // Log received route data
+                    if (data.route && data.route.length > 0) {
+                        routeLayer = L.polyline(data.route, {color: 'blue'}).addTo(map);
+                        map.fitBounds(routeLayer.getBounds());
+                    } else {
+                        console.error('No route data found.');
+                        alert('No route data found.');
+                    }
+                },
+                error: function(error){
+                    console.error('Error getting route:', error);
+                    alert('Error getting route.');
+                }
+            });
+        }
     </script>
 </body>
 </html>
