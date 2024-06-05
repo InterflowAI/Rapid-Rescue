@@ -1,16 +1,19 @@
-from django.shortcuts import render
+from django.shortcuts import render,redirect
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 import json
 from django.core.cache import cache
 from .models import Hospital
+from.forms import ContactFormForm,NewUserForm
+from django.contrib.auth.forms import AuthenticationForm
 import requests
 import openrouteservice
 import folium
 import polyline
 import time
 import logging
-
+from django.contrib.auth import authenticate, login, logout
+from django.contrib import messages
 api_key = '5b3ce3597851110001cf624892a668326ddc448c91eb298bd7822bfc'
 ORS_API_KEY='5b3ce3597851110001cf62481b8682dc02ad4716aa824115b4ba9d33'
 client = openrouteservice.Client(key=api_key)
@@ -164,3 +167,49 @@ def get_route(request):
             return JsonResponse({'error': 'Internal server error'}, status=500)
 
     return JsonResponse({'error': 'Invalid request method'}, status=400)
+def contactus(request):
+    if request.method == 'POST':
+        form = ContactFormForm(request.POST)
+        if form.is_valid():
+            form.save()
+            return render(request, 'contactus.html', {'form': form, 'message': 'Thank you for your message!'})
+    else:
+        form = ContactFormForm()
+    return render(request, 'contactus.html', {'form': form})
+def aboutus(request):
+    return render(request,'aboutus.html')
+def pronezone(request):
+    return render(request,'pronezone.html')
+
+def register_request(request):
+	if request.method == "POST":
+		form = NewUserForm(request.POST)
+		if form.is_valid():
+			user = form.save()
+			login(request, user)
+			messages.success(request, "Registration successful." )
+			return redirect("login")
+		messages.error(request, "Unsuccessful registration. Invalid information.")
+	form = NewUserForm()
+	return render (request=request, template_name="register.html", context={"register_form":form})
+def login_request(request):
+	if request.method == "POST":
+		form = AuthenticationForm(request, data=request.POST)
+		if form.is_valid():
+			username = form.cleaned_data.get('username')
+			password = form.cleaned_data.get('password')
+			user = authenticate(username=username, password=password)
+			if user is not None:
+				login(request, user)
+				messages.info(request, f"You are now logged in as {username}.")
+				return redirect("home")
+			else:
+				messages.error(request,"Invalid username or password.")
+		else:
+			messages.error(request,"Invalid username or password.")
+	form = AuthenticationForm()
+	return render(request=request, template_name="login.html", context={"login_form":form})
+def logout_request(request):
+	logout(request)
+	messages.info(request, "You have successfully logged out.") 
+	return redirect("home")

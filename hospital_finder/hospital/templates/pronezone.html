@@ -1,0 +1,71 @@
+{% extends 'base.html' %}
+{% block style %}
+.container {
+    max-width: 1200px;
+    margin: 40px auto;
+    padding: 20px;
+    background-color: #f9f9f9;
+    border: 1px solid #ddd;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    overflow: hidden; /* add this to prevent content from overflowing */
+}
+.sign-container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+.sign {
+    margin: 20px;
+    width: 200px;
+    height: auto; /* change height to auto to make it flexible */
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    overflow: hidden; /* add this to prevent content from overflowing */
+}
+.sign img {
+    width: 100px;
+    height: 100px;
+    margin-bottom: 10px;
+    object-fit: cover; /* add this to scale the image to fit the container */
+}
+.sign p {
+    font-size: 16px;
+    margin-bottom: 10px;
+    text-align: center; /* add this to center the text */
+    word-wrap: break-word; /* add this to wrap long text to the next line */
+}
+{% endblock style %}
+{% block content %}
+{% load static %}
+<div class="container">
+    <h1 style="animation:none;">Accident Prone Zone</h1>
+    <div class="sign-container">
+        <!-- Warning signs -->
+        <div class="sign">
+            <img src="{% static "hospital/download.png" %}" alt="Warning Sign 1">
+            <p>Warning: Speed Limit 30km/h</p>
+            <p>This zone has a high incidence of accidents due to speeding. </p>
+        </div>
+        <div class="sign">
+            <img src="{% static "hospital/ped.jpeg" %}" alt="Warning Sign 2">
+            <p>Warning: Pedestrian Crossing</p>
+            <p>This zone has a high incidence of accidents due to pedestrian traffic. </p>
+        </div>
+        <!-- Danger signs -->
+        <div class="sign">
+            <img src="{% static "hospital/rec.png" %}" alt="Danger Sign 1">
+            <p>Danger: Reckless Driving</p>
+            <p>This zone has a high incidence of fatal accidents due to reckless driving. </p>
+        </div>
+        <div class="sign">
+            <img src="{% static "hospital/road.png" %}" alt="Danger Sign 2">
+            <p>Danger: Road Construction</p>
+            <p>This zone has a high incidence of accidents due to road construction. </p>
+        </div>
+    </div>
+</div>
+{% endblock content %}
